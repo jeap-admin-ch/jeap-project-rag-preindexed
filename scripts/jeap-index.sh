@@ -2,13 +2,19 @@
 # Index a single repo into project-rag's LanceDB by driving its MCP server
 # over stdio. Designed to be invoked once per repo from the Dockerfile.
 #
-# Usage: jeap-index.sh <REPO_URL> <PROJECT_NAME> [CHECKOUT_DIR]
+# Usage: jeap-index.sh [--strip-tests] <REPO_URL> <PROJECT_NAME> [CHECKOUT_DIR]
 
 set -euo pipefail
 
+STRIP_TESTS=0
+if [[ "${1:-}" == "--strip-tests" ]]; then
+    STRIP_TESTS=1
+    shift
+fi
+
 REPO_URL="${1:?REPO_URL required}"
 PROJECT_NAME="${2:?PROJECT_NAME required}"
-CHECKOUT_DIR="${3:-/tmp/src/${PROJECT_NAME}}"
+CHECKOUT_DIR="${3:-/jeap/src/${PROJECT_NAME}}"
 
 PROJECT_RAG_BIN="${PROJECT_RAG_BIN:-/usr/local/bin/project-rag}"
 
@@ -18,6 +24,11 @@ log "cloning ${REPO_URL} -> ${CHECKOUT_DIR}"
 mkdir -p "$(dirname "$CHECKOUT_DIR")"
 git clone --depth 1 "$REPO_URL" "$CHECKOUT_DIR"
 
+if [[ "$STRIP_TESTS" == "1" ]]; then
+    log "stripping src/test directories from ${CHECKOUT_DIR}"
+    find "$CHECKOUT_DIR" -type d -path '*/src/test' -prune -exec rm -rf {} +
+fi
+
 log "starting project-rag MCP server"
 coproc RAG { "$PROJECT_RAG_BIN"; }
 
@@ -26,7 +37,6 @@ cleanup() {
         kill "$RAG_PID" 2>/dev/null || true
         wait "$RAG_PID" 2>/dev/null || true
     fi
-    rm -rf "$CHECKOUT_DIR"
 }
 trap cleanup EXIT
 

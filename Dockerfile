@@ -1,4 +1,4 @@
-ARG JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260519140153
+ARG JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260520112321
 
 FROM repo.bit.admin.ch:8444/bit/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS indexer
 
@@ -21,15 +21,6 @@ COPY scripts/jeap-index-all.sh /home/raguser/bin/jeap-index-all.sh
 RUN chmod +x /home/raguser/bin/jeap-index.sh /home/raguser/bin/jeap-index-all.sh
 
 USER raguser
-
-ENV PROJECT_RAG_MODEL_PATH=/home/raguser/models/all-MiniLM-L6-v2
-RUN mkdir -p "$PROJECT_RAG_MODEL_PATH" \
- && cd "$PROJECT_RAG_MODEL_PATH" \
- && BASE=https://huggingface.co/Qdrant/all-MiniLM-L6-v2-onnx/resolve/main \
- && for f in model.onnx tokenizer.json config.json special_tokens_map.json tokenizer_config.json; do \
-        curl -fL -o "$f" "$BASE/$f"; \
-    done
-
 
 RUN /home/raguser/bin/jeap-index-all.sh
 

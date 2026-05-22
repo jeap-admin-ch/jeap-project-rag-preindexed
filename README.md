@@ -1,8 +1,8 @@
 # jeap-project-rag-index
 
 Builds the `bit/jeap-project-rag-preindexed` Docker image: the upstream
-[`jeap-project-rag`](https://repo.bit.admin.ch) MCP server bundled with a
-pre-populated LanceDB index of a curated set of JEAP library source code and JME
+[`jeap-project-rag`](https://bitbucket.bit.admin.ch/plugins/servlet/branch-permissions/JEAP/jeap-project-rag)
+MCP server bundled with a pre-populated LanceDB index of a curated set of JEAP library source code and JME
 example repositories.
 
 Consumers of the image get instant semantic search over the JEAP codebase

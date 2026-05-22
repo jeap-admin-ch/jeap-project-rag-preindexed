@@ -40,6 +40,7 @@ JME_REPOS=(
     jme-cdct-segregated-consumer-example
     jme-cdct-segregated-provider-example
     jme-crypto-example
+    jme-gitops
     jme-interactiontest-example
     jme-jeap-nivel-oauth-mockserver-scs-template
     jme-jeap-nivel-quadrel-project-template

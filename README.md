@@ -35,8 +35,8 @@ already in place. Point an MCP client at it over stdio:
 docker run --rm -i bit/jeap-project-rag-preindexed:dev
 ```
 
-The embedding model lives at `/opt/models/all-MiniLM-L6-v2` and is referenced
-via the `PROJECT_RAG_MODEL_PATH` env var baked into the image. Cloned sources
+The embedding model lives at `/home/raguser/models/all-MiniLM-L6-v2` and is
+referenced via the `PROJECT_RAG_MODEL_PATH` env var baked into the image. Cloned sources
 remain available under `/jeap/src/<project>` for tools that want to read
 indexed files directly. If you want to minimize image size, you might want to
 skip copying the source code directory to the final image and only keep the LanceDB index.
@@ -61,8 +61,8 @@ COPY --from=rag /usr/local/bin/project-rag /usr/local/bin/project-rag
 COPY --from=rag /home/raguser/.local/share/project-rag /home/appuser/.local/share/project-rag
 COPY --from=rag /home/raguser/.cache/project-rag       /home/appuser/.cache/project-rag
 
-# Embedding model
-COPY --from=rag /opt/models                    /opt/models
+# Embedding model - relocated from /home/raguser/models to /opt/models
+COPY --from=rag /home/raguser/models           /opt/models
 
 # jEAP Source code
 COPY --from=rag /jeap/src                      /jeap/src
@@ -102,10 +102,11 @@ Notes:
 
 The `Dockerfile` is a two-stage build:
 
-1. **`indexer` stage** - extends the upstream base image, installs `git`,
-   downloads the `all-MiniLM-L6-v2` ONNX embedding model from HuggingFace into
-   `/opt/models`, then runs `scripts/jeap-index-all.sh` to clone and index
-   every listed repo. Indexing writes to `~/.local/share/project-rag`
+1. **`indexer` stage** - extends the upstream base image, installs build-only
+   tooling (`git`, `curl`, `findutils`), then runs `scripts/jeap-index-all.sh`
+   to clone and index every listed repo. The `all-MiniLM-L6-v2` embedding model
+   is not downloaded here - the base image ships it pre-downloaded under
+   `/home/raguser/models`. Indexing writes to `~/.local/share/project-rag`
    (LanceDB) and `~/.cache/project-rag`.
 2. **`final` stage** - same upstream base, but only the index artifacts, the
    embedding model, and the cloned sources are copied over. Build-only tooling
@@ -133,4 +134,4 @@ passed to `index_codebase`.
 | `JME_GIT_BASE_URL`                   | `https://bitbucket.bit.admin.ch/scm/bit_jme` | Base URL for JME example repos |
 | `JEAP_INDEX_BIN`                     | `/home/raguser/bin/jeap-index.sh`            | Per-repo indexer script        |
 | `PROJECT_RAG_BIN`                    | `/usr/local/bin/project-rag`                 | Upstream MCP server binary     |
-| `PROJECT_RAG_MODEL_PATH`             | `/opt/models/all-MiniLM-L6-v2`               | Embedding model location       |
+| `PROJECT_RAG_MODEL_PATH`             | `/home/raguser/models/all-MiniLM-L6-v2`      | Embedding model location       |

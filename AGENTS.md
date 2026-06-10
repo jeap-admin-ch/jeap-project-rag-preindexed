@@ -36,10 +36,11 @@ Downstream images `COPY --from` this image to pull in the `project-rag` binary, 
 
 ### Indexing flow
 
-`scripts/jeap-index-all.sh` declares two repo lists (JEAP infra repos under `scm/jeap`, JME example repos under `scm/bit_jme`) and calls `scripts/jeap-index.sh` once per repo. Stops at the first failure (`set -euo pipefail`).
+`scripts/jeap-index-all.sh` declares three repo lists (JEAP infra repos under `scm/jeap`, JME example repos under `scm/bit_jme`, and public OSS repos under `github.com/jeap-admin-ch`) and calls `scripts/jeap-index.sh` once per repo. Stops at the first failure (`set -euo pipefail`).
 
 - **JEAP repos** are indexed with `--strip-tests`, which deletes `src/test` trees before indexing — those tests are rarely relevant to agents writing applications *with* jEAP.
 - **JME example repos** are indexed in full, because their tests are part of the example.
+- **GitHub OSS repos** are indexed with `--strip-tests`, same as the JEAP infra repos. These are public, so the clone needs no credentials.
 
 `scripts/jeap-index.sh` does the actual work for one repo:
 
@@ -49,12 +50,13 @@ Downstream images `COPY --from` this image to pull in the `project-rag` binary, 
 - Reads server responses line-by-line, watching for `"id":2` to know indexing finished, and inspects for `"error"` or `"isError":true` to set exit status
 - Closes the server's stdin so it exits cleanly
 
-When adding/removing repos, edit the `JEAP_REPOS` or `JME_REPOS` arrays in `jeap-index-all.sh`. The repo name is also the project name passed to `index_codebase`.
+When adding/removing repos, edit the `JEAP_REPOS`, `JME_REPOS`, or `GITHUB_REPOS` arrays in `jeap-index-all.sh`. The repo name is also the project name passed to `index_codebase`.
 
 ### Configurable env vars
 
 - `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` — defaults to `https://bitbucket.bit.admin.ch/scm/jeap`
 - `JME_GIT_BASE_URL` — defaults to `https://bitbucket.bit.admin.ch/scm/bit_jme`
+- `GITHUB_GIT_BASE_URL` — defaults to `https://github.com/jeap-admin-ch`
 - `JEAP_INDEX_BIN` — path to the per-repo indexer (default `/home/raguser/bin/jeap-index.sh`)
 - `PROJECT_RAG_BIN` — path to the upstream MCP server binary (default `/usr/local/bin/project-rag`)
 

@@ -114,16 +114,18 @@ The `Dockerfile` is a two-stage build:
 
 ### Indexing flow
 
-`scripts/jeap-index-all.sh` declares two repo lists - JEAP infrastructure
-repos under `jeap` and JME example repos under `bit_jme` - and invokes
-`scripts/jeap-index.sh` once per repo. JEAP repos are indexed with `--strip-tests` so `src/test`
-trees are excluded as these tests are usually not relevant for coding agents
-writing application using jEAP. JME example repos are indexed in full because
-the tests are part of the example.
+`scripts/jeap-index-all.sh` declares three repo lists - JEAP infrastructure
+repos under `jeap`, JME example repos under `bit_jme`, and public OSS repos
+under `github.com/jeap-admin-ch` - and invokes `scripts/jeap-index.sh` once per
+repo. JEAP repos and the GitHub OSS repos are indexed with `--strip-tests` so
+`src/test` trees are excluded as these tests are usually not relevant for coding
+agents writing application using jEAP. JME example repos are indexed in full
+because the tests are part of the example. The GitHub repos are public, so the
+clone needs no credentials.
 
 ## Adding or removing repositories
 
-Edit the `JEAP_REPOS` or `JME_REPOS` arrays in `scripts/jeap-index-all.sh`. The repo name doubles as the `project` name
+Edit the `JEAP_REPOS`, `JME_REPOS`, or `GITHUB_REPOS` arrays in `scripts/jeap-index-all.sh`. The repo name doubles as the `project` name
 passed to `index_codebase`.
 
 ## Configurable environment variables
@@ -132,6 +134,7 @@ passed to `index_codebase`.
 |--------------------------------------|----------------------------------------------|--------------------------------|
 | `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` | `https://bitbucket.bit.admin.ch/scm/jeap`    | Base URL for JEAP repos        |
 | `JME_GIT_BASE_URL`                   | `https://bitbucket.bit.admin.ch/scm/bit_jme` | Base URL for JME example repos |
+| `GITHUB_GIT_BASE_URL`                | `https://github.com/jeap-admin-ch`           | Base URL for GitHub OSS repos  |
 | `JEAP_INDEX_BIN`                     | `/home/raguser/bin/jeap-index.sh`            | Per-repo indexer script        |
 | `PROJECT_RAG_BIN`                    | `/usr/local/bin/project-rag`                 | Upstream MCP server binary     |
 | `PROJECT_RAG_MODEL_PATH`             | `/home/raguser/models/all-MiniLM-L6-v2`      | Embedding model location       |

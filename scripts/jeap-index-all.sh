@@ -6,6 +6,7 @@ set -euo pipefail
 
 JEAP_GIT_BASE_URL="${JEAP_GIT_BASE_URL:-${GIT_BASE_URL:-https://bitbucket.bit.admin.ch/scm/jeap}}"
 JME_GIT_BASE_URL="${JME_GIT_BASE_URL:-https://bitbucket.bit.admin.ch/scm/bit_jme}"
+GITHUB_GIT_BASE_URL="${GITHUB_GIT_BASE_URL:-https://github.com/jeap-admin-ch}"
 JEAP_INDEX_BIN="${JEAP_INDEX_BIN:-/home/raguser/bin/jeap-index.sh}"
 
 JEAP_REPOS=(
@@ -65,6 +66,11 @@ JME_REPOS=(
     jme-swagger-example
 )
 
+# Public OSS jEAP repos published on GitHub under github.com/jeap-admin-ch.
+GITHUB_REPOS=(
+    jeap-cli
+)
+
 index_repos() {
     local git_base_url="$1"
     local flags="$2"
@@ -76,5 +82,6 @@ index_repos() {
     done
 }
 
-index_repos "$JEAP_GIT_BASE_URL" "--strip-tests" "${JEAP_REPOS[@]}"
-index_repos "$JME_GIT_BASE_URL"  ""              "${JME_REPOS[@]}"
+index_repos "$JEAP_GIT_BASE_URL"   "--strip-tests" "${JEAP_REPOS[@]}"
+index_repos "$JME_GIT_BASE_URL"    ""              "${JME_REPOS[@]}"
+index_repos "$GITHUB_GIT_BASE_URL" "--strip-tests" "${GITHUB_REPOS[@]}"

@@ -1,10 +1,5 @@
 @Library('jeap-pipelinelibrary@master') _
 
-// Index the jEAP codebase once per day
-properties([
-    pipelineTriggers([cron('H 3 * * 1')])
-])
-
 // Index the jEAP codebase once per week (Monday)
 properties([
     pipelineTriggers([cron('H 3 * * 1')])

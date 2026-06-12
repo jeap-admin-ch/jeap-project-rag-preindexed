@@ -27,6 +27,7 @@ JEAP_REPOS=(
     jeap-db-schema-publisher
     jeap-open-api-publisher-starter
     jeap-audit
+    jeap-spring-boot-jwe-starter
 )
 
 JME_REPOS=(

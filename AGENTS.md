@@ -50,12 +50,16 @@ Downstream images `COPY --from` this image to pull in the `project-rag` binary, 
 - Reads server responses line-by-line, watching for `"id":2` to know indexing finished, and inspects for `"error"` or `"isError":true` to set exit status
 - Closes the server's stdin so it exits cleanly
 
-When adding/removing repos, edit the `JEAP_REPOS`, `JME_REPOS`, or `GITHUB_REPOS` arrays in `jeap-index-all.sh`. The repo name is also the project name passed to `index_codebase`.
+JEAP and JME repos are **auto-discovered** from the Bitbucket API at build time. Archived repos are skipped
+automatically. To exclude a repo from indexing, add its slug to the `JEAP_EXCLUDE` or `JME_EXCLUDE` arrays in
+`jeap-index-all.sh`. New repos appear in the index automatically on the next build unless explicitly excluded. GitHub
+repos remain a static list (`GITHUB_REPOS`).
 
 ### Configurable env vars
 
-- `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` — defaults to `https://bitbucket.bit.admin.ch/scm/jeap`
-- `JME_GIT_BASE_URL` — defaults to `https://bitbucket.bit.admin.ch/scm/bit_jme`
+- `BITBUCKET_BASE_URL` — defaults to `https://bitbucket.bit.admin.ch`
+- `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` — defaults to `${BITBUCKET_BASE_URL}/scm/jeap`
+- `JME_GIT_BASE_URL` — defaults to `${BITBUCKET_BASE_URL}/scm/bit_jme`
 - `GITHUB_GIT_BASE_URL` — defaults to `https://github.com/jeap-admin-ch`
 - `JEAP_INDEX_BIN` — path to the per-repo indexer (default `/home/raguser/bin/jeap-index.sh`)
 - `PROJECT_RAG_BIN` — path to the upstream MCP server binary (default `/usr/local/bin/project-rag`)

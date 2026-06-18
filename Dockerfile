@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ARG JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260520112321
 
 FROM repo.bit.admin.ch:8444/bit/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS indexer
@@ -9,6 +10,7 @@ RUN dnf install -y --allowerasing --setopt=install_weak_deps=False \
         ca-certificates \
         curl \
         findutils \
+        jq \
     && dnf clean all \
     && rm -rf /var/cache/dnf \
     && mkdir -p /home/raguser/bin \

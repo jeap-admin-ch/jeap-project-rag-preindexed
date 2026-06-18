@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 ARG JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260520112321
 
 FROM repo.bit.admin.ch:8444/bit/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS indexer

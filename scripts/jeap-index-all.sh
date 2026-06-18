@@ -18,39 +18,30 @@ JEAP_INDEX_BIN="${JEAP_INDEX_BIN:-/home/raguser/bin/jeap-index.sh}"
 # automatically. Edit these lists to control what gets indexed.
 
 JEAP_EXCLUDE=(
-    aws-codebuild-amazonlinux2        # CI build image
-    jeap                              # indexed from GitHub
-    jeap-admin-ch                     # org-level meta
-    jeap-agent-marketplace            # platform service
+    aws-codebuild-amazonlinux2        # Legacy CI build image
+    jeap                              # Legacy jEAP
+    jeap-admin-ch                     # indexed from GitHub (jeap umbrella repo with docs)
     jeap-aws-pipeline                 # CI pipeline infra
-    jeap-bptestagent-api              # internal testing tool
-    jeap-bptest-orchestrator          # internal testing tool
     jeap-central-publishing-maven-plugin  # CI publishing infra
     jeap-cli                          # indexed from GitHub
-    jeap-codebuild-amazonlinux        # CI build image
-    jeap-github-actions               # CI infra
     jeap-keycloak-pams                # infrastructure
     jeap-libraries-trivy-scan         # CI security scanning
     jeap-license-template             # template/meta
-    jeap-microservice-pipeline        # CI pipeline
+    jeap-microservice-pipeline        # Legacy CI pipeline
     jeap-migration-bot                # internal tool
     jeap-pact-webhook                 # CI infra
-    jeap-pipelinelibrary              # CI pipeline
-    jeap-pipeline-seed                # CI pipeline
+    jeap-pipelinelibrary              # Legacy CI pipeline
+    jeap-pipeline-seed                # CI pipeline seed job
     jeap-project-rag                  # this tooling itself
     jeap-project-rag-preindexed       # this repo
-    jeap-python-pipeline-lib          # CI pipeline
+    jeap-python-pipeline-lib          # Internal CI pipeline lib
     jeap-renovate-config              # dependency management config
     jeap-renovate-presets             # dependency management config
-    jeap-rhos-entrypoint              # runtime infra
-    jeap-runtime-corretto             # runtime image
-    jeap-test-message-type-registry   # internal test fixture
     jeap-trivyignore                  # security config
-    jeap-version-overview             # internal dashboard
+    jeap-version-overview             # version overview repo, will be provided as dedicated MCP tool
 )
 
 JME_EXCLUDE=(
-    jme-admin-ch                      # org-level meta
     jme-certificates                  # infrastructure/certs
     jme-examples-trivy-scan           # CI security scanning
     jme-integration-test              # CI integration tests
@@ -130,6 +121,14 @@ log "Found ${#JEAP_REPOS[@]} JEAP repos to index"
 log "Discovering JME repos from Bitbucket project BIT_JME..."
 mapfile -t JME_REPOS < <(list_bitbucket_repos "BIT_JME" | filter_excluded JME_EXCLUDE | sort)
 log "Found ${#JME_REPOS[@]} JME repos to index"
+
+log "Repos to index:"
+log "  [JEAP] (${#JEAP_REPOS[@]} repos, --strip-tests)"
+for repo in "${JEAP_REPOS[@]}"; do log "    - $repo"; done
+log "  [JME] (${#JME_REPOS[@]} repos)"
+for repo in "${JME_REPOS[@]}"; do log "    - $repo"; done
+log "  [GitHub] (${#GITHUB_REPOS[@]} repos, --strip-tests)"
+for repo in "${GITHUB_REPOS[@]}"; do log "    - $repo"; done
 
 index_repos "$JEAP_GIT_BASE_URL"   "--strip-tests" "${JEAP_REPOS[@]}"
 index_repos "$JME_GIT_BASE_URL"    ""              "${JME_REPOS[@]}"

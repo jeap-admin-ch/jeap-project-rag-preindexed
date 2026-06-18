@@ -28,6 +28,11 @@ JEAP_REPOS=(
     jeap-open-api-publisher-starter
     jeap-audit
     jeap-spring-boot-jwe-starter
+    jeap-opensearch-index-type
+    jeap-opensearch-client-starter
+    jeap-opensearch-searchitem-api
+    jeap-opensearch-index-writer-service
+    jeap-opensearch-index-type-registry-maven-plugin
 )
 
 JME_REPOS=(

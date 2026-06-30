@@ -10,6 +10,7 @@ RUN dnf install -y --allowerasing --setopt=install_weak_deps=False \
         curl \
         findutils \
         jq \
+        perl \
     && dnf clean all \
     && rm -rf /var/cache/dnf \
     && mkdir -p /home/raguser/bin \
@@ -19,7 +20,10 @@ RUN dnf install -y --allowerasing --setopt=install_weak_deps=False \
 
 COPY scripts/jeap-index.sh /home/raguser/bin/jeap-index.sh
 COPY scripts/jeap-index-all.sh /home/raguser/bin/jeap-index-all.sh
-RUN chmod +x /home/raguser/bin/jeap-index.sh /home/raguser/bin/jeap-index-all.sh
+COPY scripts/jeap-rewrite-doc-links.sh /home/raguser/bin/jeap-rewrite-doc-links.sh
+COPY scripts/jeap-stage-docs.sh /home/raguser/bin/jeap-stage-docs.sh
+RUN chmod +x /home/raguser/bin/jeap-index.sh /home/raguser/bin/jeap-index-all.sh \
+        /home/raguser/bin/jeap-rewrite-doc-links.sh /home/raguser/bin/jeap-stage-docs.sh
 
 USER raguser
 

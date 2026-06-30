@@ -123,13 +123,48 @@ mapfile -t JME_REPOS < <(list_bitbucket_repos "BIT_JME" | filter_excluded JME_EX
 log "Found ${#JME_REPOS[@]} JME repos to index"
 
 log "Repos to index:"
-log "  [JEAP] (${#JEAP_REPOS[@]} repos, --strip-tests)"
+log "  [JEAP] (${#JEAP_REPOS[@]} repos, --strip-tests --exclude-docs)"
 for repo in "${JEAP_REPOS[@]}"; do log "    - $repo"; done
-log "  [JME] (${#JME_REPOS[@]} repos)"
+log "  [JME] (${#JME_REPOS[@]} repos, --exclude-docs)"
 for repo in "${JME_REPOS[@]}"; do log "    - $repo"; done
-log "  [GitHub] (${#GITHUB_REPOS[@]} repos, --strip-tests)"
+log "  [GitHub] (${#GITHUB_REPOS[@]} repos, --strip-tests --exclude-docs)"
 for repo in "${GITHUB_REPOS[@]}"; do log "    - $repo"; done
 
-index_repos "$JEAP_GIT_BASE_URL"   "--strip-tests" "${JEAP_REPOS[@]}"
-index_repos "$JME_GIT_BASE_URL"    ""              "${JME_REPOS[@]}"
-index_repos "$GITHUB_GIT_BASE_URL" "--strip-tests" "${GITHUB_REPOS[@]}"
+# Whitelist of slugs that are actually indexed. jeap-index.sh -> jeap-rewrite-doc-links.sh
+# reads this (via the environment) and rewrites only links pointing at an indexed repo,
+# leaving links to excluded/non-indexed repos as their original external URL (A1).
+export INDEXED_SLUGS="${JEAP_REPOS[*]} ${JME_REPOS[*]} ${GITHUB_REPOS[*]}"
+
+# All per-repo passes run with --exclude-docs: the repo-root docs/ subtree is left OUT of the
+# per-repo project=<slug> index and instead indexed once below as project=jeap-docs. Without this,
+# every docs/ file would be embedded twice (once under <slug>, once under jeap-docs) with identical
+# text, so an unfiltered search would return the same chunk twice, halving the useful top-k slots.
+# docs/ stays on disk (exclude only shapes the index request), so jeap-stage-docs.sh can still stage
+# it. Nested <module>/docs/ trees are NOT excluded (not staged into jeap-docs) and stay per-repo.
+index_repos "$JEAP_GIT_BASE_URL"   "--strip-tests --exclude-docs" "${JEAP_REPOS[@]}"
+index_repos "$JME_GIT_BASE_URL"    "--exclude-docs"               "${JME_REPOS[@]}"
+index_repos "$GITHUB_GIT_BASE_URL" "--strip-tests --exclude-docs" "${GITHUB_REPOS[@]}"
+
+# --- Dedicated docs project: stage docs/ subtrees, index once as project=jeap-docs ---
+# Each repo above is indexed under project=<slug> with file_path = docs/... (no <repo> segment,
+# because the indexed root is /jeap/src/<slug>). jeap-stage-docs.sh stages every */docs subtree
+# under a single root (DOCS_CORPUS, default /jeap/docs-corpus) and prints the number of staged repos;
+# we then index that corpus ONCE here as project=jeap-docs via jeap-index.sh --no-clone, so its
+# file_path carries the <repo>/ segment (<repo>/docs/<topic>.md). The corpus is rooted outside
+# /jeap/src, so the final Docker stage (which copies /jeap/src) never ships it. The staging helper
+# is idempotent and deletion-safe (guards DOCS_CORPUS); it stages nothing when no docs/ exists
+# (-> count 0 -> we skip the pass).
+DOCS_CORPUS="${DOCS_CORPUS:-/jeap/docs-corpus}"
+DOCS_PROJECT="${DOCS_PROJECT:-jeap-docs}"
+STAGE_DOCS_BIN="${STAGE_DOCS_BIN:-$(dirname "$0")/jeap-stage-docs.sh}"
+
+# Hand DOCS_CORPUS to the staging helper so it stages into the
+# exact same path the index pass below reads from.
+staged_docs_repos="$(DOCS_CORPUS="$DOCS_CORPUS" "$STAGE_DOCS_BIN")"
+if [[ "${staged_docs_repos:-0}" -gt 0 ]]; then
+    log "Indexing staged docs corpus ($staged_docs_repos repos) as project=$DOCS_PROJECT"
+    # No --exclude-docs here: this IS the docs project, so the staged docs/ trees must be indexed.
+    "$JEAP_INDEX_BIN" --no-clone "$DOCS_PROJECT" "$DOCS_CORPUS"
+else
+    log "No docs/ subtrees staged - skipping $DOCS_PROJECT pass"
+fi

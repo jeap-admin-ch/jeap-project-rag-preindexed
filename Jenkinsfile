@@ -1,8 +1,13 @@
 @Library('jeap-pipelinelibrary@master') _
 
-// Index the jEAP codebase once per week (Monday)
+// Index the jEAP codebase once per week (Monday morning).
+//
+// TODO: additionally rebuild whenever a jEAP parent is published.
+// Add an upstream() trigger here.
 properties([
-    pipelineTriggers([cron('H 3 * * 1')])
+    pipelineTriggers([
+        cron('H 3 * * 1')
+    ])
 ])
 
 def baseTag = '0.1.0-al2023'

@@ -1,12 +1,14 @@
 @Library('jeap-pipelinelibrary@master') _
 
-// Index the jEAP codebase once per week (Monday morning).
-//
-// TODO: additionally rebuild whenever a jEAP parent is published.
-// Add an upstream() trigger here.
+// Index the jEAP codebase once per week (Monday morning), and additionally
+// whenever the jeap-spring-boot-parent has been built successfully.
 properties([
     pipelineTriggers([
-        cron('H 3 * * 1')
+        cron('H 3 * * 1'),
+        upstream(
+            upstreamProjects: 'BIT/jEAP/jeap.jeap-spring-boot-parent/master',
+            threshold: hudson.model.Result.SUCCESS
+        )
     ])
 ])
 

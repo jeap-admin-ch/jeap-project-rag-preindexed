@@ -130,7 +130,7 @@ for repo in "${JME_REPOS[@]}"; do log "    - $repo"; done
 log "  [GitHub] (${#GITHUB_REPOS[@]} repos, --strip-tests --exclude-docs)"
 for repo in "${GITHUB_REPOS[@]}"; do log "    - $repo"; done
 
-# Whitelist of slugs that are actually indexed. jeap-index.sh -> jeap-rewrite-doc-links.sh
+# Whitelist of slugs that are actually indexed. jeap-index.sh -> jeap-rewrite-doc-links.py
 # reads this (via the environment) and rewrites only links pointing at an indexed repo,
 # leaving links to excluded/non-indexed repos as their original external URL (A1).
 export INDEXED_SLUGS="${JEAP_REPOS[*]} ${JME_REPOS[*]} ${GITHUB_REPOS[*]}"

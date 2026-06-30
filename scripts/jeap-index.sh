@@ -45,7 +45,7 @@ else
 fi
 
 PROJECT_RAG_BIN="${PROJECT_RAG_BIN:-/usr/local/bin/project-rag}"
-REWRITE_BIN="${REWRITE_BIN:-$(dirname "$0")/jeap-rewrite-doc-links.sh}"
+REWRITE_BIN="${REWRITE_BIN:-$(dirname "$0")/jeap-rewrite-doc-links.py}"
 
 log() { printf '[jeap-index] %s\n' "$*" >&2; }
 

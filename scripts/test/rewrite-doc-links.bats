@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
-# Tests for scripts/jeap-rewrite-doc-links.sh (A1): one case per rewrite rule, fragment/query
+# Tests for scripts/jeap-rewrite-doc-links.py (A1): one case per rewrite rule, fragment/query
 # handling, scope (only indexed jeap-admin-ch repos), README in scope, and idempotence.
 
 setup() {
-    SCRIPT="${BATS_TEST_DIRNAME}/../jeap-rewrite-doc-links.sh"
+    SCRIPT="${BATS_TEST_DIRNAME}/../jeap-rewrite-doc-links.py"
     TMP="$(mktemp -d)"
     mkdir -p "$TMP/repo"
     export INDEXED_SLUGS="jeap-messaging jeap jeap-cli"

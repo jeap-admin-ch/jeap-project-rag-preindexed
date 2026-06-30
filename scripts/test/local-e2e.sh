@@ -41,10 +41,10 @@ BIN="$(mktemp -d)/bin"
 mkdir -p "$BIN"
 cp "$SCRIPTS_SRC"/jeap-index.sh \
    "$SCRIPTS_SRC"/jeap-index-all.sh \
-   "$SCRIPTS_SRC"/jeap-rewrite-doc-links.sh \
+   "$SCRIPTS_SRC"/jeap-rewrite-doc-links.py \
    "$SCRIPTS_SRC"/jeap-stage-docs.sh \
    "$BIN/"
-chmod +x "$BIN"/*.sh
+chmod +x "$BIN"/*
 
 # --- fake project-rag: logs the JSON-RPC frames it receives, answers id:2, exits on EOF ---
 cat > "$BIN/project-rag" <<'FAKE'

@@ -104,7 +104,7 @@ The `Dockerfile` is a two-stage build:
 
 1. **`indexer` stage** - extends the upstream base image, installs build-only
    tooling (`git`, `curl`, `findutils`, `jq` for Bitbucket repo discovery, and
-   `perl` for the doc-link rewrite), then runs `scripts/jeap-index-all.sh`
+   `python3` for the doc-link rewrite), then runs `scripts/jeap-index-all.sh`
    to clone and index every listed repo. The `all-MiniLM-L6-v2` embedding model
    is not downloaded here - the base image ships it pre-downloaded under
    `/home/raguser/models`. Indexing writes to `~/.local/share/project-rag`
@@ -138,7 +138,7 @@ because the tests are part of the example. **All** per-repo passes additionally 
 #### Documentation link rewrite
 
 Before indexing each repo, `scripts/jeap-index.sh` calls
-`scripts/jeap-rewrite-doc-links.sh` to rewrite `jeap-admin-ch` GitHub links inside
+`scripts/jeap-rewrite-doc-links.py` to rewrite `jeap-admin-ch` GitHub links inside
 Markdown files (`*.md` / `*.markdown`, including a repo-root `README.md`) into
 index-local, repo-prefixed paths (e.g.
 `https://github.com/jeap-admin-ch/jeap-messaging/blob/main/docs/outbox.md#config`

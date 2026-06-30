@@ -29,6 +29,14 @@ if [[ "$STRIP_TESTS" == "1" ]]; then
     find "$CHECKOUT_DIR" -type d -path '*/src/test' -prune -exec rm -rf {} +
 fi
 
+# Remove common files that add noise to the index (legal, CI, build wrappers, etc.)
+log "removing non-indexable files from ${CHECKOUT_DIR}"
+for name in AGENTS.md CHANGELOG.md CONTRIBUTING.md SECURITY.md THIRD-PARTY-LICENSES.md \
+            LICENSE Jenkinsfile publiccode.yml setPomVersions.sh mvnw mvnw.cmd; do
+    find "$CHECKOUT_DIR" -maxdepth 1 -name "$name" -delete
+done
+find "$CHECKOUT_DIR" -maxdepth 1 -type d -name '.mvn' -exec rm -rf {} +
+
 log "starting project-rag MCP server"
 coproc RAG { "$PROJECT_RAG_BIN"; }
 

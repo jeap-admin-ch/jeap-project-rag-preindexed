@@ -1,7 +1,7 @@
 # jeap-project-rag-index
 
-Builds the `bit/jeap-project-rag-preindexed` Docker image: the upstream
-[`jeap-project-rag`](https://bitbucket.bit.admin.ch/plugins/servlet/branch-permissions/JEAP/jeap-project-rag)
+Builds the `ghcr.io/jeap-admin-ch/jeap-project-rag-preindexed` Docker image: the upstream
+[`jeap-project-rag`](https://github.com/jeap-admin-ch/jeap-project-rag)
 MCP server bundled with a pre-populated LanceDB index of a curated set of JEAP library source code and JME
 example repositories.
 
@@ -16,12 +16,12 @@ index the jEAP codebase regularly to be used in the jEAP MCP server.
 
 ```bash
 # Build locally (matches what CI does)
-docker build -t bit/jeap-project-rag-preindexed:dev .
+docker build -t jeap-project-rag-preindexed:dev .
 
 # Pin a specific upstream base image tag
 docker build \
   --build-arg JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260508043103 \
-  -t bit/jeap-project-rag-preindexed:dev .
+  -t jeap-project-rag-preindexed:dev .
 ```
 
 CI builds the image and publishes it using the tag `${baseTag}-${UTC timestamp}` (e.g. `0.1.0-al2023-20260508043103`).
@@ -32,7 +32,7 @@ The image launches the `project-rag` MCP server with the pre-built index
 already in place. Point an MCP client at it over stdio:
 
 ```bash
-docker run --rm -i bit/jeap-project-rag-preindexed:dev
+docker run --rm -i jeap-project-rag-preindexed:dev
 ```
 
 The embedding model lives at `/home/raguser/models/all-MiniLM-L6-v2` and is
@@ -49,12 +49,19 @@ the cloned sources. The example below shows a Spring Boot service image that
 embeds the index and runs the MCP server under a non-root `appuser`:
 
 ```dockerfile
-# Stage 1: alias the preindexed image so we can COPY from it.
+# Stage 1: alias the preindexed image so we can COPY from it. Public GHCR image.
 ARG PREINDEXED_TAG=0.1.0-al2023-20260513080314
-FROM repo.bit.admin.ch:8444/bit/jeap-project-rag-preindexed:${PREINDEXED_TAG} AS rag
+FROM ghcr.io/jeap-admin-ch/jeap-project-rag-preindexed:${PREINDEXED_TAG} AS rag
 
-# Stage 2: the existing runtime image, enriched with project-rag + index, based on up-to-date base image
-FROM 211125750372.dkr.ecr.eu-central-2.amazonaws.com/jeap-runtime-coretto:25.20251119043107
+# Stage 2: a public Java runtime base, enriched with project-rag + index. Creates the non-root
+# "appuser" account the COPY steps below expect - swap for whatever your own base image already
+# provides, if it provides one.
+FROM amazoncorretto:25-al2023
+
+RUN dnf install -y --setopt=install_weak_deps=False shadow-utils ca-certificates && \
+    groupadd -r appuser && \
+    useradd -r -g appuser -m -d /home/appuser appuser && \
+    dnf clean all
 
 COPY --from=rag /usr/local/bin/project-rag /usr/local/bin/project-rag
 
@@ -103,7 +110,7 @@ Notes:
 The `Dockerfile` is a two-stage build:
 
 1. **`indexer` stage** - extends the upstream base image, installs build-only
-   tooling (`git`, `curl`, `findutils`, `jq` for Bitbucket repo discovery, and
+   tooling (`git`, `curl`, `findutils`, `jq` for GitHub repo discovery, and
    `python3` for the doc-link rewrite), then runs `scripts/jeap-index-all.sh`
    to clone and index every listed repo. The `all-MiniLM-L6-v2` embedding model
    is not downloaded here - the base image ships it pre-downloaded under
@@ -115,22 +122,24 @@ The `Dockerfile` is a two-stage build:
 
 ### Indexing flow
 
-`scripts/jeap-index-all.sh` indexes three sets of repos and invokes
+`scripts/jeap-index-all.sh` indexes two sets of repos and invokes
 `scripts/jeap-index.sh` once per repo:
 
-- **JEAP** infrastructure repos (Bitbucket project `JEAP`, under `scm/jeap`) and
-  **JME** example repos (Bitbucket project `BIT_JME`, under `scm/bit_jme`) are
-  **auto-discovered from the Bitbucket REST API** at build time. Archived repos
-  are skipped automatically, and repos whose slug is listed in the `JEAP_EXCLUDE`
-  / `JME_EXCLUDE` arrays are dropped. New repos are picked up automatically on the
-  next build unless excluded.
-- **GitHub** public OSS repos under `github.com/jeap-admin-ch` are a **static
-  list** (`GITHUB_REPOS`); these are public, so the clone needs no credentials.
+- **JEAP** infrastructure repos are **auto-discovered from the public
+  `jeap-admin-ch` GitHub org** at build time.
+- **JME** example repos are **auto-discovered from the public `jme-admin-ch`
+  GitHub org** at build time.
 
-JEAP repos and the GitHub OSS repos are indexed with `--strip-tests` so
-`src/test` trees are excluded, as these tests are usually not relevant for coding
-agents writing applications using jEAP. JME example repos keep their tests
-because the tests are part of the example. **All** per-repo passes additionally use
+Both are public orgs, so neither clone needs credentials.
+
+Both sets skip archived repos automatically, and drop repos whose name is
+listed in the `JEAP_EXCLUDE` / `JME_EXCLUDE` arrays. New repos are picked up
+automatically on the next build unless excluded.
+
+JEAP repos are indexed with `--strip-tests` so `src/test` trees are excluded,
+as these tests are usually not relevant for coding agents writing applications
+using jEAP. JME example repos keep their tests because the tests are part of
+the example. **All** per-repo passes additionally use
 `--exclude-docs` so each repo's top-level `docs/` is left out of the per-repo
 `project=<slug>` index and indexed once under `project=jeap-docs` instead (see
 [Dedicated `jeap-docs` project](#dedicated-jeap-docs-project) below).
@@ -187,21 +196,22 @@ the per-repo index (it is not staged into `jeap-docs`, which collects only top-l
 
 ## Adding or removing repositories
 
-JEAP and JME repos are **auto-discovered** from the Bitbucket API, so new repos
-are indexed automatically on the next build (archived repos are skipped). To
-**exclude** one, add its slug to the `JEAP_EXCLUDE` or `JME_EXCLUDE` array in
-`scripts/jeap-index-all.sh`. GitHub OSS repos are a static list - edit the
-`GITHUB_REPOS` array to add or remove one. The repo slug doubles as the `project`
-name passed to `index_codebase`.
+JEAP and JME repos are both **auto-discovered** from their public GitHub orgs
+(`jeap-admin-ch`, `jme-admin-ch`). New repos are indexed automatically on the
+next build (archived repos are skipped). To **exclude** one, add its name to
+the `JEAP_EXCLUDE` or `JME_EXCLUDE` array in `scripts/jeap-index-all.sh`. The
+repo name doubles as the `project` name passed to `index_codebase`.
 
 ## Configurable environment variables
 
 | Variable                             | Default                                      | Purpose                        |
 |--------------------------------------|----------------------------------------------|--------------------------------|
-| `BITBUCKET_BASE_URL`                 | `https://bitbucket.bit.admin.ch`             | Base URL for Bitbucket repo discovery (JEAP/JME) |
-| `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` | `https://bitbucket.bit.admin.ch/scm/jeap`    | Base URL for JEAP repos        |
-| `JME_GIT_BASE_URL`                   | `https://bitbucket.bit.admin.ch/scm/bit_jme` | Base URL for JME example repos |
-| `GITHUB_GIT_BASE_URL`                | `https://github.com/jeap-admin-ch`           | Base URL for GitHub OSS repos  |
+| `JEAP_GITHUB_ORG`                    | `jeap-admin-ch`                              | GitHub org for JEAP repo discovery |
+| `JME_GITHUB_ORG`                     | `jme-admin-ch`                                | GitHub org for JME repo discovery |
+| `GITHUB_API_URL`                     | `https://api.github.com`                     | Base URL for the GitHub API    |
+| `GITHUB_TOKEN`                       | _(unset)_                                    | Optional; raises the unauthenticated GitHub API rate limit |
+| `JEAP_GIT_BASE_URL` / `GIT_BASE_URL` | `https://github.com/${JEAP_GITHUB_ORG}`      | Base URL for JEAP repos        |
+| `JME_GIT_BASE_URL`                   | `https://github.com/${JME_GITHUB_ORG}`       | Base URL for JME example repos |
 | `JEAP_INDEX_BIN`                     | `/home/raguser/bin/jeap-index.sh`            | Per-repo indexer script        |
 | `PROJECT_RAG_BIN`                    | `/usr/local/bin/project-rag`                 | Upstream MCP server binary     |
 | `PROJECT_RAG_MODEL_PATH`             | `/home/raguser/models/all-MiniLM-L6-v2`      | Embedding model location       |

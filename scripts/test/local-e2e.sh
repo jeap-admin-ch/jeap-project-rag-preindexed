@@ -16,7 +16,7 @@
 #     sudo mkdir -p /jeap && sudo chown "$(id -u):$(id -g)" /jeap
 #
 # Usage:
-#   ./local-e2e.sh                 # full discovery: clones ~all JEAP+JME+GitHub repos (slow)
+#   ./local-e2e.sh                 # full discovery: clones ~all JEAP + JME repos from GitHub (slow)
 #   SLUGS="jeap-crypto jeap-messaging" ./local-e2e.sh   # test just these JEAP slugs (fast)
 set -euo pipefail
 
@@ -64,7 +64,7 @@ export JEAP_INDEX_BIN="$BIN/jeap-index.sh"
 # STAGE_DOCS_BIN and REWRITE_BIN auto-resolve to $BIN (dirname of the scripts), so no overrides needed.
 
 if [[ -n "${SLUGS:-}" ]]; then
-    # Fast path: skip Bitbucket discovery, drive jeap-index.sh directly for a few JEAP repos,
+    # Fast path: skip GitHub discovery, drive jeap-index.sh directly for a few JEAP repos,
     # then stage + (fake-)index docs the same way jeap-index-all.sh does.
     echo ">>> Subset run for: $SLUGS" >&2
     export INDEXED_SLUGS="$SLUGS"
@@ -72,7 +72,7 @@ if [[ -n "${SLUGS:-}" ]]; then
         # --exclude-docs mirrors jeap-index-all.sh: docs/ is excluded from the per-repo index and
         # indexed once via the jeap-docs corpus below. docs/ stays on disk, so staging still works.
         "$JEAP_INDEX_BIN" --strip-tests --exclude-docs \
-            "https://bitbucket.bit.admin.ch/scm/jeap/${slug}.git" "$slug"
+            "https://github.com/jeap-admin-ch/${slug}.git" "$slug"
     done
     staged="$(DOCS_CORPUS=/jeap/docs-corpus "$BIN/jeap-stage-docs.sh")"
     if [[ "${staged:-0}" -gt 0 ]]; then

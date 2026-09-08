@@ -1,6 +1,7 @@
-ARG JEAP_PROJECT_RAG_TAG=0.1.0-al2023-20260520112321
+# Public GHCR image, built and published by jeap-project-rag's own pipeline.
+ARG JEAP_PROJECT_RAG_TAG=latest
 
-FROM repo.bit.admin.ch:8444/bit/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS indexer
+FROM ghcr.io/jeap-admin-ch/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS indexer
 
 USER root
 
@@ -29,7 +30,7 @@ USER raguser
 
 RUN /home/raguser/bin/jeap-index-all.sh
 
-FROM repo.bit.admin.ch:8444/bit/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS final
+FROM ghcr.io/jeap-admin-ch/jeap-project-rag:${JEAP_PROJECT_RAG_TAG} AS final
 
 COPY --from=indexer /home/raguser/.local/share/project-rag /home/raguser/.local/share/project-rag
 COPY --from=indexer /home/raguser/.cache/project-rag       /home/raguser/.cache/project-rag

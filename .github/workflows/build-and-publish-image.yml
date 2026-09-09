@@ -67,7 +67,7 @@ jobs:
       # No Maven/Cargo build here - this repo has no application code. The RUN jeap-index-all.sh
       # step inside the Dockerfile does the actual work (cloning + indexing from GitHub).
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64

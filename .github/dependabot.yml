@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Actions referenced by the workflows in .github/workflows/. Not tracking the "docker"
+  # ecosystem here: the Dockerfile's FROM line uses a parameterized ${JEAP_PROJECT_RAG_TAG}
+  # build-arg (default "latest"), not a literal pinned version, so there's nothing for
+  # Dependabot to bump.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      # CI tooling, not application code - a bad bump here fails loudly on the next push rather
+      # than silently shipping something broken, so major/minor/patch are all fine to batch into
+      # a single PR instead of one-per-action.
+      github-actions:
+        patterns: ["*"]

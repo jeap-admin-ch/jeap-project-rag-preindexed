@@ -1,0 +1,86 @@
+name: Build and publish preindexed image
+
+on:
+  push:
+    branches: [ "main" ]
+  # Without this, PR branches (e.g. Dependabot's github-actions bumps) never get a CI run at
+  # all - see the "push" gate below on the build step, which is what actually keeps a
+  # PR-triggered run from publishing an image.
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Re-index twice a week (Monday and Wednesday mornings). Replaces the Jenkinsfile's cron
+    # plus its upstream-on-jeap-spring-boot-parent-success trigger - that upstream trigger has
+    # no GitHub-side equivalent (the mirror has no build workflow of its own to hook), so this
+    # is intentionally schedule-only.
+    - cron: '0 3 * * 1,3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Tag shape kept from this repo's old Jenkins-based build, so anything pinning a specific
+      # tag keeps working either way it got built: <baseTag>-al2023-<UTC timestamp>.
+      - name: Compute image tag
+        id: tag
+        run: |
+          set -euo pipefail
+          base_tag="0.1.0-al2023"
+          timestamp=$(date -u +%Y%m%d%H%M%S)
+          echo "tag=${base_tag}-${timestamp}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # jeap-project-rag has no "latest" tag yet (that only gets pushed from its own main
+      # branch, which hasn't happened yet), so the Dockerfile's default ARG resolves to
+      # nothing. Rather than pinning a fixed snapshot here (which would go stale, and
+      # eventually 404 once jeap-project-rag's own cleanup job prunes it), resolve whatever
+      # upstream actually has each time this runs: prefer "latest" once it exists, otherwise
+      # fall back to the most recent versioned tag (sorts correctly - the timestamp suffix is
+      # a fixed-width YYYYMMDDHHMMSS).
+      - name: Resolve upstream jeap-project-rag tag
+        id: upstream
+        run: |
+          set -euo pipefail
+          token=$(curl -sf "https://ghcr.io/token?service=ghcr.io&scope=repository:jeap-admin-ch/jeap-project-rag:pull" | jq -r .token)
+          tags=$(curl -sf -H "Authorization: Bearer ${token}" "https://ghcr.io/v2/jeap-admin-ch/jeap-project-rag/tags/list" | jq -r '.tags[]')
+          if echo "${tags}" | grep -qx latest; then
+            tag=latest
+          else
+            tag=$(echo "${tags}" | sort | tail -n1)
+          fi
+          echo "Resolved jeap-project-rag tag: ${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      # No Maven/Cargo build here - this repo has no application code. The RUN jeap-index-all.sh
+      # step inside the Dockerfile does the actual work (cloning + indexing from GitHub).
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          # Build-only on a PR (e.g. Dependabot) - never push from an unmerged, unreviewed change.
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            JEAP_PROJECT_RAG_TAG=${{ steps.upstream.outputs.tag }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

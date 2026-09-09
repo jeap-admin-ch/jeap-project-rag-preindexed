@@ -1,0 +1,23 @@
+name: Delete old container image versions
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      # Needs the repo to have Admin access under this package's own Package settings ->
+      # Manage Actions access - the default GITHUB_TOKEN alone isn't enough for an
+      # org-owned container package.
+      - name: Delete old image versions, keep the last 3
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'jeap-project-rag-preindexed'
+          package-type: 'container'
+          min-versions-to-keep: 3

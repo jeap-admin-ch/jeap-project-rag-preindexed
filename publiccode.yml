@@ -1,0 +1,40 @@
+publiccodeYmlVersion: 0.5.0
+name: jeap-project-rag-preindexed
+applicationSuite: jEAP
+softwareVersion: 0.1.0
+releaseDate: 2026-09-04
+url: "https://github.com/jeap-admin-ch/jeap-project-rag-preindexed.git"
+landingURL: "https://github.com/jeap-admin-ch/jeap"
+platforms:
+  - linux
+categories:
+  - application-development
+developmentStatus: stable
+softwareType: standalone/backend
+organisation:
+  uri: https://ld.admin.ch/office/V.1.7
+  name: Federal Office of Information Technology, Systems and Telecommunication
+description:
+  en:
+    localisedName: jeap-project-rag-preindexed
+    shortDescription: Docker image bundling the jeap-project-rag MCP server with a pre-built index of the jEAP codebase
+    longDescription: >
+      jeap-project-rag-preindexed builds the `ghcr.io/jeap-admin-ch/jeap-project-rag-preindexed` Docker image: the upstream
+      jeap-project-rag MCP server bundled with a pre-populated LanceDB index of a curated set of JEAP library
+      source code and JME example repositories. There is no application code in this repository - it is a thin
+      shell/Docker harness around the upstream jeap-project-rag binary, so consumers of the image get instant
+      semantic search over the jEAP codebase without having to clone and index the repos themselves.
+    features:
+      - Builds a Docker image pre-loaded with a jEAP codebase index
+      - Regularly re-indexes the jEAP codebase for the jEAP MCP server
+legal:
+  license: Apache-2.0
+maintenance:
+  type: internal
+  contacts:
+    - name: Federal Office of Information Technology, Systems and Telecommunication FOITT
+      email: jeap-community@bit.admin.ch
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en

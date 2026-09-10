@@ -21,3 +21,81 @@ jobs:
           package-name: 'jeap-project-rag-preindexed'
           package-type: 'container'
           min-versions-to-keep: 3
+
+  notify-ms-teams:
+    needs: cleanup
+    if: always() && needs.cleanup.result == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Microsoft Teams of cleanup failure
+        env:
+          MS_TEAMS_WEBHOOK: ${{ secrets.MS_TEAMS_WEBHOOK }}
+        run: |
+          if [ -z "$MS_TEAMS_WEBHOOK" ]; then
+            echo "MS_TEAMS_WEBHOOK is not configured"
+            exit 0
+          fi
+
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          jq -n \
+            --arg workflow "${{ github.workflow }}" \
+            --arg project "${{ github.repository }}" \
+            --arg repository "${{ github.repository }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg runId "${{ github.run_id }}" \
+            --arg runUrl "$RUN_URL" \
+            '{
+              type: "message",
+              attachments: [
+                {
+                  contentType: "application/vnd.microsoft.card.adaptive",
+                  content: {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    type: "AdaptiveCard",
+                    version: "1.4",
+                    body: [
+                      {
+                        type: "TextBlock",
+                        text: "GitHub Actions",
+                        weight: "Bolder",
+                        size: "Medium"
+                      },
+                      {
+                        type: "TextBlock",
+                        text: ($workflow + " • " + $project),
+                        weight: "Bolder",
+                        size: "Large",
+                        wrap: true
+                      },
+                      {
+                        type: "FactSet",
+                        facts: [
+                          { title: "Status", value: "🔴 Failed" },
+                          { title: "Repository", value: $repository },
+                          { title: "Branch", value: $branch },
+                          { title: "Commit", value: ($commit[0:7]) },
+                          { title: "Triggered by", value: $actor },
+                          { title: "Run", value: ("#" + $runId) }
+                        ]
+                      }
+                    ],
+                    actions: [
+                      { type: "Action.OpenUrl", title: "View GitHub Actions run", url: $runUrl }
+                    ]
+                  }
+                }
+              ]
+            }' |
+            http_code=$(curl --silent --show-error \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              -H "Content-Type: application/json" \
+              --data-binary @- \
+              "$MS_TEAMS_WEBHOOK" 2>/dev/null)
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "Teams notification failed (HTTP status: $http_code)"
+              exit 1
+            fi
